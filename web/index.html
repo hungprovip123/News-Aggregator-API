@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Aggregator API Test</title>
+</head>
+<body>
+    <h1>📰 News Aggregator API Test</h1>
+    
+    <!-- Auth Section -->
+    <h2>🔐 Authentication</h2>
+    
+    <div>
+        <h3>Register User</h3>
+        <input type="text" id="regUsername" placeholder="Username" value="admin">
+        <input type="email" id="regEmail" placeholder="Email" value="admin@test.com">
+        <input type="password" id="regPassword" placeholder="Password" value="123456">
+        <button onclick="register()">Register</button>
+        <div id="registerResult"></div>
+    </div>
+
+    <div>
+        <h3>Login</h3>
+        <input type="text" id="loginUsername" placeholder="Username" value="admin">
+        <input type="password" id="loginPassword" placeholder="Password" value="123456">
+        <button onclick="login()">Login</button>
+        <div id="loginResult"></div>
+    </div>
+
+    <div>
+        <h3>Current Token</h3>
+        <textarea id="currentToken" rows="3" cols="50" placeholder="JWT Token will appear here..."></textarea>
+        <br>
+        <button onclick="verifyToken()">Verify Token</button>
+        <div id="verifyResult"></div>
+    </div>
+
+    <!-- News Section -->
+    <h2>📰 News API</h2>
+    
+    <div>
+        <h3>Get All News</h3>
+        <input type="number" id="page" placeholder="Page" value="1">
+        <input type="number" id="limit" placeholder="Limit" value="10">
+        <input type="text" id="search" placeholder="Search term (optional)">
+        <button onclick="getNews()">Get News</button>
+        <div id="newsResult"></div>
+    </div>
+
+    <div>
+        <h3>Get News by ID</h3>
+        <input type="number" id="newsId" placeholder="News ID" value="1">
+        <button onclick="getNewsById()">Get News by ID</button>
+        <div id="newsIdResult"></div>
+    </div>
+
+    <!-- Health Checks -->
+    <h2>🔍 Health Checks</h2>
+    <button onclick="checkAuthHealth()">Auth Service Health</button>
+    <button onclick="checkNewsHealth()">News API Health</button>
+    <div id="healthResult"></div>
+
+    <!-- Test Token -->
+    <h2>🧪 Debug</h2>
+    <button onclick="testToken()">Test Token Generation</button>
+    <div id="testTokenResult"></div>
+
+    <script>
+        const API_BASE = {
+            auth: 'http://localhost:8083/api/v1',
+            news: 'http://localhost:8081/api/v1',
+            authHealth: 'http://localhost:8083/health',
+            newsHealth: 'http://localhost:8081/health'
+        };
+
+        let currentToken = '';
+
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                const data = await response.json();
+                return { status: response.status, data };
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+
+        function displayResult(elementId, result) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+        }
+
+        async function register() {
+            const username = document.getElementById('regUsername').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+
+            const result = await makeRequest(`${API_BASE.auth}/register`, {
+                method: 'POST',
+                body: JSON.stringify({ username, email, password })
+            });
+
+            if (result.data && result.data.token) {
+                currentToken = result.data.token;
+                document.getElementById('currentToken').value = currentToken;
+            }
+
+            displayResult('registerResult', result);
+        }
+
+        async function login() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            const result = await makeRequest(`${API_BASE.auth}/login`, {
+                method: 'POST',
+                body: JSON.stringify({ username, password })
+            });
+
+            if (result.data && result.data.token) {
+                currentToken = result.data.token;
+                document.getElementById('currentToken').value = currentToken;
+            }
+
+            displayResult('loginResult', result);
+        }
+
+        async function verifyToken() {
+            const token = document.getElementById('currentToken').value || currentToken;
+            
+            const result = await makeRequest(`${API_BASE.auth}/verify`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            displayResult('verifyResult', result);
+        }
+
+        async function getNews() {
+            const page = document.getElementById('page').value;
+            const limit = document.getElementById('limit').value;
+            const search = document.getElementById('search').value;
+
+            let url = `${API_BASE.news}/news?page=${page}&limit=${limit}`;
+            if (search) {
+                url += `&search=${encodeURIComponent(search)}`;
+            }
+
+            const result = await makeRequest(url);
+            displayResult('newsResult', result);
+        }
+
+        async function getNewsById() {
+            const newsId = document.getElementById('newsId').value;
+            
+            const result = await makeRequest(`${API_BASE.news}/news/${newsId}`);
+            displayResult('newsIdResult', result);
+        }
+
+        async function checkAuthHealth() {
+            const result = await makeRequest(API_BASE.authHealth);
+            displayResult('healthResult', { authService: result });
+        }
+
+        async function checkNewsHealth() {
+            const result = await makeRequest(API_BASE.newsHealth);
+            displayResult('healthResult', { newsAPI: result });
+        }
+
+        async function testToken() {
+            const result = await makeRequest(`${API_BASE.auth}/test-token`);
+            
+            if (result.data && result.data.token) {
+                currentToken = result.data.token;
+                document.getElementById('currentToken').value = currentToken;
+            }
+
+            displayResult('testTokenResult', result);
+        }
+
+        // Auto-test health on page load
+        window.onload = function() {
+            setTimeout(() => {
+                checkAuthHealth();
+                setTimeout(() => {
+                    checkNewsHealth();
+                }, 1000);
+            }, 500);
+        };
+    </script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        div {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        
+        input, textarea, button {
+            margin: 5px;
+            padding: 5px;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</body>
+</html> 

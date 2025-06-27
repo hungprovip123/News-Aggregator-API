@@ -1,0 +1,28 @@
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /app
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the auth service
+RUN CGO_ENABLED=0 GOOS=linux go build -o auth-service ./cmd/auth-service
+
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates tzdata
+WORKDIR /root/
+
+# Copy the binary
+COPY --from=builder /app/auth-service .
+COPY --from=builder /app/config.env .
+
+# Expose port
+EXPOSE 8083
+
+# Run the service
+CMD ["./auth-service"] 

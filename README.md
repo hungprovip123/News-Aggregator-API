@@ -51,14 +51,7 @@ go run .\cmd\web-server\main.go
 
 ## ⚙️ Cấu hình
 
-File `config.env` chứa cấu hình chính:
-
-```env
-# Database
-DB_USER=postgres
-DB_PASSWORD=123456
-DB_NAME=newsdb
-
+```
 # JWT
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 
@@ -95,21 +88,6 @@ GET /api/v1/news/source/:source  # Lọc theo nguồn
 GET /health              # Health check
 ```
 
-## 🛠️ Cấu trúc project
-
-```
-week4/
-├── cmd/                 # Các services
-│   ├── auth-service/
-│   ├── news-api/
-│   ├── news-scraper/
-│   └── web-server/
-├── pkg/                 # Shared code
-├── web/                 # Web interface
-├── config.env           # Cấu hình
-└── start-services.bat   # Script khởi động
-```
-
 ## 🔥 Quick Start
 
 1. **Clone project**
@@ -130,12 +108,3 @@ week4/
 **Database lỗi:**
 - Services vẫn hoạt động mà không cần database
 - Có thể chạy PostgreSQL container nếu cần
-
-## ✨ Tính năng nổi bật
-
-- 🔐 JWT Authentication với bcrypt
-- 🌐 Web interface test API real-time
-- 🚀 Microservices architecture  
-- 📱 CORS enabled cho browser calls
-- ⚡ Redis caching và rate limiting
-- 🔍 Health monitoring cho tất cả services 
